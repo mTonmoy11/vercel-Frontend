@@ -63,13 +63,13 @@ export const router = createBrowserRouter([
         element: <Home></Home>
       },
       {
-  path: "/reporting",
-  element: (
-    <ProtectedRoute>
-      <ReportingTool />
-    </ProtectedRoute>
-  )
-},
+        path: "/reporting",
+        element: (
+          <ProtectedRoute>
+            <ReportingTool />
+          </ProtectedRoute>
+        )
+      },
       {
         path: "/heatmap",
         element: <HeatMap></HeatMap>
@@ -126,7 +126,7 @@ export const router = createBrowserRouter([
         path: "/AntiCorruptionEvents",
         element: <AntiCorruptionEvents></AntiCorruptionEvents>,
       },
-         {
+      {
         path: "/dashboard",
         element: (
           <ProtectedRoute>
@@ -135,13 +135,13 @@ export const router = createBrowserRouter([
         ),
       },
       {
-  path: "/notifications",
-  element: (
-    <ProtectedRoute>
-      <NotificationsPage />
-    </ProtectedRoute>
-  ),
-},
+        path: "/notifications",
+        element: (
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        ),
+      },
 
 
     ]
