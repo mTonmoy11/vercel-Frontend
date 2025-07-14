@@ -101,11 +101,9 @@ const IDRegistrationForm = () => {
       newErrors.division = 'Please select your division';
     }
 
-    // Password validation
+    // Password validation - REMOVED LENGTH REQUIREMENT
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
     } else if (
       !/[A-Z]/.test(formData.password) ||
       !/[a-z]/.test(formData.password) ||
@@ -161,10 +159,7 @@ const IDRegistrationForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-         style={{
-          
-         }}>
+    <div className="min-h-screen flex items-center justify-center p-4">
       <style jsx>{`
         @keyframes gradientBG {
           0% { background-position: 0% 50%; }
@@ -474,16 +469,10 @@ const IDRegistrationForm = () => {
               </div>
             </div>
 
-            {/* Password Requirements */}
+            {/* Password Requirements - UPDATED TO REMOVE LENGTH REQUIREMENT */}
             <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
               <p className="text-sm font-medium text-gray-700 mb-2">Password must contain:</p>
               <ul className="text-xs text-gray-600 grid grid-cols-2 gap-1">
-                <li className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : ''}`}>
-                  <svg className={`w-4 h-4 mr-1 ${formData.password.length >= 8 ? 'text-green-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={formData.password.length >= 8 ? "M5 13l4 4L19 7" : "M6 18L18 6M6 6l12 12"}></path>
-                  </svg>
-                  At least 8 characters
-                </li>
                 <li className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : ''}`}>
                   <svg className={`w-4 h-4 mr-1 ${/[A-Z]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={/[A-Z]/.test(formData.password) ? "M5 13l4 4L19 7" : "M6 18L18 6M6 6l12 12"}></path>
@@ -555,4 +544,4 @@ const IDRegistrationForm = () => {
   );
 };
 
-export default IDRegistrationForm;
+export default IDRegistrationForm; 

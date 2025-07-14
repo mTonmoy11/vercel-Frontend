@@ -65,9 +65,9 @@ export const router = createBrowserRouter([
       {
         path: "/reporting",
         element: (
-          <ProtectedRoute>
+      
             <ReportingTool />
-          </ProtectedRoute>
+
         )
       },
       {

@@ -2,22 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { FiSend, FiUser, FiFileText, FiCreditCard, FiPhone, FiChevronDown, FiEyeOff, FiAward, FiMapPin, FiPaperclip, FiX } from 'react-icons/fi';
 
 const ReportingTool = () => {
-  // Fixed user data from database
-  const userData = {
-    name: "John Doe",
-    nid: "1234567890",
-    phone: "01712345678",
-    division: "Dhaka"
-  };
-
   const [problemType, setProblemType] = useState('');
   const [description, setDescription] = useState('');
+  const [incidentAddress, setIncidentAddress] = useState('');
+  const [incidentDivision, setIncidentDivision] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showRewardInfo, setShowRewardInfo] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [files, setFiles] = useState([]);
+
+  // User input fields
+  const [reporterInfo, setReporterInfo] = useState({
+    name: '',
+    phone: '',
+    address: ''
+  });
 
   const problemTypes = [
     'Bribery',
@@ -29,6 +30,17 @@ const ReportingTool = () => {
     'Other'
   ];
 
+  const divisions = [
+    'Dhaka',
+    'Chittagong',
+    'Rajshahi',
+    'Khulna',
+    'Barishal',
+    'Sylhet',
+    'Rangpur',
+    'Mymensingh'
+  ];
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -37,13 +49,24 @@ const ReportingTool = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validate reporter info if not anonymous
+    if (!isAnonymous) {
+      if (!reporterInfo.name || !reporterInfo.phone || !reporterInfo.address) {
+        alert('Please fill in all reporter information fields');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     // Prepare form data
     const formData = {
       problemType,
       description,
+      incidentAddress,
+      incidentDivision,
       isAnonymous,
       files: files.map(file => file.name),
-      userInfo: isAnonymous ? null : userData
+      userInfo: isAnonymous ? null : reporterInfo
     };
 
     console.log('Submitting report:', formData);
@@ -57,10 +80,17 @@ const ReportingTool = () => {
       setTimeout(() => {
         setProblemType('');
         setDescription('');
+        setIncidentAddress('');
+        setIncidentDivision('');
         setFiles([]);
         setIsAnonymous(false);
         setShowFileUpload(false);
         setIsSubmitted(false);
+        setReporterInfo({
+          name: '',
+          phone: '',
+          address: ''
+        });
       }, 4000);
     }, 1500);
   };
@@ -72,6 +102,14 @@ const ReportingTool = () => {
 
   const removeFile = (fileName) => {
     setFiles(files.filter(file => file.name !== fileName));
+  };
+
+  const handleReporterInfoChange = (e) => {
+    const { name, value } = e.target;
+    setReporterInfo(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   if (isSubmitted) {
@@ -151,6 +189,45 @@ const ReportingTool = () => {
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 resize-none"
               required
             ></textarea>
+          </div>
+
+          {/* Incident Location */}
+          <div className="mb-8">
+            <label className="block text-gray-700 font-medium mb-3">
+              Where did it happen? (Address)
+            </label>
+            <textarea
+              value={incidentAddress}
+              onChange={(e) => setIncidentAddress(e.target.value)}
+              rows={3}
+              placeholder="Enter the exact location/address where the incident occurred..."
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 resize-none"
+              required
+            ></textarea>
+          </div>
+
+          {/* Incident Division */}
+          <div className="mb-8">
+            <label className="block text-gray-700 font-medium mb-3 flex items-center">
+              <FiMapPin className="mr-2" />
+              Division
+            </label>
+            <div className="relative">
+              <select
+                value={incidentDivision}
+                onChange={(e) => setIncidentDivision(e.target.value)}
+                className="w-full p-4 pl-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 appearance-none"
+                required
+              >
+                <option value="" disabled>Select division</option>
+                {divisions.map((div, index) => (
+                  <option key={index} value={div}>{div}</option>
+                ))}
+              </select>
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <FiMapPin />
+              </div>
+            </div>
           </div>
 
           {/* File Upload Section */}
@@ -281,7 +358,7 @@ const ReportingTool = () => {
               )}
 
               <p className="text-gray-600 mb-6">
-                Your information is securely retrieved from our database.
+                Please provide your information to be eligible for rewards.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -291,28 +368,15 @@ const ReportingTool = () => {
                   <div className="relative">
                     <input
                       type="text"
-                      value={userData.name}
-                      readOnly
-                      className="w-full p-4 pl-12 bg-gray-100 text-gray-700 border border-gray-200 rounded-xl cursor-not-allowed"
+                      name="name"
+                      value={reporterInfo.name}
+                      onChange={handleReporterInfoChange}
+                      placeholder="Enter your full name"
+                      className="w-full p-4 pl-12 bg-white text-gray-700 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300"
+                      required
                     />
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
                       <FiUser />
-                    </div>
-                  </div>
-                </div>
-
-                {/* NID */}
-                <div>
-                  <label className="block text-gray-700 font-medium mb-3">National ID (NID)</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={userData.nid}
-                      readOnly
-                      className="w-full p-4 pl-12 bg-gray-100 text-gray-700 border border-gray-200 rounded-xl cursor-not-allowed"
-                    />
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                      <FiCreditCard />
                     </div>
                   </div>
                 </div>
@@ -323,9 +387,12 @@ const ReportingTool = () => {
                   <div className="relative">
                     <input
                       type="tel"
-                      value={userData.phone}
-                      readOnly
-                      className="w-full p-4 pl-12 bg-gray-100 text-gray-700 border border-gray-200 rounded-xl cursor-not-allowed"
+                      name="phone"
+                      value={reporterInfo.phone}
+                      onChange={handleReporterInfoChange}
+                      placeholder="Enter your phone number"
+                      className="w-full p-4 pl-12 bg-white text-gray-700 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300"
+                      required
                     />
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
                       <FiPhone />
@@ -333,15 +400,18 @@ const ReportingTool = () => {
                   </div>
                 </div>
 
-                {/* Division */}
-                <div>
-                  <label className="block text-gray-700 font-medium mb-3">Division</label>
+                {/* Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-gray-700 font-medium mb-3">Your Address</label>
                   <div className="relative">
                     <input
                       type="text"
-                      value={userData.division}
-                      readOnly
-                      className="w-full p-4 pl-12 bg-gray-100 text-gray-700 border border-gray-200 rounded-xl cursor-not-allowed"
+                      name="address"
+                      value={reporterInfo.address}
+                      onChange={handleReporterInfoChange}
+                      placeholder="Enter your complete address"
+                      className="w-full p-4 pl-12 bg-white text-gray-700 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300"
+                      required
                     />
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
                       <FiMapPin />
