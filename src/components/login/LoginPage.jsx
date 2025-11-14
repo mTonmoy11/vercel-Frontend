@@ -18,116 +18,149 @@ const LoginPage = () => {
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn, user } = useAuth();
+  const { signIn, user, loginAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleUserLogin = async (e) => {
     e.preventDefault();
-
-    const form = e.target;
-    const email = form.email.value;
-    const password = form.password.value;
-    //console.log(email, password);
-
-    signIn(email, password)
-      .then((result) => {
-        const user = result.user;
-        console.log("Login successful:", user);
-        const lastSignIn = user.metadata?.lastSignInTime;
-        const date = new Date(lastSignIn);
-        const formatted = date.toLocaleString();
-        console.log("Formatted last sign-in time:", formatted);
-        const loggedUser = {
-  email,
-  password, // This will be hashed on the backend
-  lastSignIn: formatted,
-};
-//console.log("Logged User:", loggedUser);
-
-fetch("http://localhost:5000/api/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(loggedUser),
-})
-.then(async (res) => {
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Login failed");
-  }
-  if (data.success) {
-    console.log("Login successful:", data);
-    // handle success (e.g., redirect user, store token, etc.)
-  } else {
-    console.error("Login failed:", data.message);
-    // handle error (e.g., show error message to user)
-  }
-})
-.catch((error) => {
-  console.error("Error during login:", error);
-  // handle network errors or other exceptions
-});
-
-        if (user) {
-
-          navigate(location?.state ? location?.state : "/");
-        }
-      })
-      .catch((error) => {
-        console.error("Login failed:", error);
-      });
 
     // Reset errors
     setEmailError("");
     setPasswordError("");
     setLoginError("");
+    setIsLoading(true);
+
+    const form = e.target;
+    const email = form.email.value;
+    const password = form.password.value;
 
     // Validate email
     if (!email) {
       setEmailError("Email is required");
+      setIsLoading(false);
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError("Please enter a valid email address");
+      setIsLoading(false);
       return;
     }
 
     // Validate password
     if (!password) {
       setPasswordError("Password is required");
+      setIsLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setPasswordError("Password must be at least 6 characters");
+      setIsLoading(false);
       return;
     }
 
-    // Determine login type
-    let loginType;
-    if (showUserLogin) {
-      loginType = "user";
-    } else if (showAdminLogin) {
-      loginType = "admin";
-    } else {
-      setLoginError("Invalid login type");
-      return;
-    }
+    try {
+      const result = await signIn(email, password);
+      const user = result.user;
+      console.log("Login successful:", user);
 
-    // Attempt login
+      const lastSignIn = user.metadata?.lastSignInTime;
+      const date = new Date(lastSignIn);
+      const formatted = date.toLocaleString();
 
-    if (user) {
-      if (user.userType === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/");
+      const loggedUser = {
+        email,
+        password,
+        lastSignIn: formatted,
+        userId: user?.uid || user?._id || "",
+      };
+
+      const response = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loggedUser),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
       }
-    } else {
-      setLoginError("Invalid credentials or unauthorized access");
-      // CLEAR INPUT FIELDS ON FAILED LOGIN
+
+      if (data.success) {
+        console.log("Login successful:", data);
+        navigate(location?.state ? location?.state : "/");
+      } else {
+        setLoginError(data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      setLoginError(error.message || "Invalid credentials. Please try again.");
       setEmail("");
       setPassword("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+
+    setEmailError("");
+    setPasswordError("");
+    setLoginError("");
+    setIsLoading(true);
+
+    const form = e.target;
+    const email = form.email.value;
+    const password = form.password.value;
+
+    if (!email) {
+      setEmailError("Email is required");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setPasswordError("Password is required");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Admin login failed");
+
+      if (data.success) {
+        // Persist in context (also writes localStorage)
+        loginAdmin(data.admin);
+        // Navigate after state set
+        navigate("/admin/dashboard", { replace: true });
+      } else {
+        setLoginError(data.message || "Admin login failed");
+      }
+    } catch (err) {
+      setLoginError(
+        err.message || "Invalid admin credentials. Please try again."
+      );
+      setEmail("");
+      setPassword("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -137,6 +170,8 @@ fetch("http://localhost:5000/api/login", {
     setEmailError("");
     setPasswordError("");
     setLoginError("");
+    setEmail("");
+    setPassword("");
   };
 
   const toggleAdminLogin = () => {
@@ -145,6 +180,8 @@ fetch("http://localhost:5000/api/login", {
     setEmailError("");
     setPasswordError("");
     setLoginError("");
+    setEmail("");
+    setPassword("");
   };
 
   const goBack = () => {
@@ -153,9 +190,10 @@ fetch("http://localhost:5000/api/login", {
     setEmailError("");
     setPasswordError("");
     setLoginError("");
+    setEmail("");
+    setPassword("");
   };
 
-  // Toggle password visibility
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -320,6 +358,29 @@ fetch("http://localhost:5000/api/login", {
     </svg>
   );
 
+  const LoadingSpinner = () => (
+    <svg
+      className="animate-spin h-5 w-5 text-white inline-block mr-2"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff5f0] to-[#ffece0] flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
@@ -415,7 +476,9 @@ fetch("http://localhost:5000/api/login", {
                   </div>
                 )}
 
-                <form onSubmit={handleLogin}>
+                <form
+                  onSubmit={showUserLogin ? handleUserLogin : handleAdminLogin}
+                >
                   <div className="form-control mb-4">
                     <label className="label">
                       <span className="label-text text-lg">Email Address</span>
@@ -437,6 +500,7 @@ fetch("http://localhost:5000/api/login", {
                           setEmail(e.target.value);
                           if (emailError) setEmailError("");
                         }}
+                        disabled={isLoading}
                       />
                     </div>
                     {emailError && (
@@ -481,11 +545,13 @@ fetch("http://localhost:5000/api/login", {
                           setPassword(e.target.value);
                           if (passwordError) setPasswordError("");
                         }}
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
                         className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 z-10"
                         onClick={togglePasswordVisibility}
+                        disabled={isLoading}
                       >
                         {showPassword ? <EyeClosedIcon /> : <EyeOpenIcon />}
                       </button>
@@ -511,35 +577,49 @@ fetch("http://localhost:5000/api/login", {
                     )}
                   </div>
 
-                  <div className="flex justify-between items-center mb-6">
-                    <label className="cursor-pointer label">
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        style={{ accentColor: "#f6824d" }}
-                        checked={rememberMe}
-                        onChange={() => setRememberMe(!rememberMe)}
-                      />
-                      <span className="label-text ml-2 text-gray-700">
-                        Remember me
-                      </span>
-                    </label>
-                    <a href="#" className="text-[#f6824d] hover:underline">
-                      Forgot password?
-                    </a>
-                  </div>
+                  {showUserLogin && (
+                    <div className="flex justify-between items-center mb-6">
+                      <label className="cursor-pointer label">
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          style={{ accentColor: "#f6824d" }}
+                          checked={rememberMe}
+                          onChange={() => setRememberMe(!rememberMe)}
+                          disabled={isLoading}
+                        />
+                        <span className="label-text ml-2 text-gray-700">
+                          Remember me
+                        </span>
+                      </label>
+                      <a href="#" className="text-[#f6824d] hover:underline">
+                        Forgot password?
+                      </a>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
-                    className="btn w-full text-lg py-4 bg-gradient-to-r from-[#f6824d] to-[#e05a2a] border-[#f6824d] hover:from-[#e05a2a] hover:to-[#c54a1a] text-white transition-all duration-300 transform hover:scale-[1.02]"
+                    disabled={isLoading}
+                    className={`btn w-full text-lg py-4 bg-gradient-to-r from-[#f6824d] to-[#e05a2a] border-[#f6824d] hover:from-[#e05a2a] hover:to-[#c54a1a] text-white transition-all duration-300 transform hover:scale-[1.02] ${
+                      isLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    Sign In
+                    {isLoading ? (
+                      <>
+                        <LoadingSpinner />
+                        Signing In...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
                   </button>
                 </form>
 
                 <div className="text-center mt-6">
                   <button
                     onClick={goBack}
+                    disabled={isLoading}
                     className="btn btn-ghost text-[#f6824d] hover:bg-[#fff5f0]"
                   >
                     <BackIcon className="mr-2 inline-block" />

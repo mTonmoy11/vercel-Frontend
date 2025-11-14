@@ -1,8 +1,8 @@
 import { NavLink, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { FiUser, FiX, FiMenu, FiBell } from "react-icons/fi";
-import logo from '../assets/images/logo.png';
-import { useAuth } from '../context/AuthContext';
+import logo from "../assets/images/logo.png";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,33 +10,44 @@ const Navbar = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const {
     user,
+    isAdmin,
+    adminUser,
     logout,
     notifications,
-    markNotificationAsRead
+    markNotificationAsRead,
   } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    await logout?.();
+    navigate("/");
     setIsMenuOpen(false);
   };
+
+  const isAuthed = !!user || isAdmin;
+  const displayName =
+    user?.displayName ||
+    adminUser?.name ||
+    user?.email ||
+    adminUser?.email ||
+    "User";
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Calculate unread notifications count
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // SAFE: handle undefined notifications
+  const notificationsSafe = Array.isArray(notifications) ? notifications : [];
+  const unreadCount = notificationsSafe.filter((n) => !n?.read).length;
 
   // Get latest 3 notifications sorted by date (newest first)
-  const latestNotifications = [...notifications]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+  const latestNotifications = [...notificationsSafe]
+    .sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0))
     .slice(0, 3);
 
   // Format time difference (e.g., "2 hours ago")
@@ -49,15 +60,18 @@ const Navbar = () => {
 
     if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
   };
 
   return (
     <>
-      <nav className={`fixed w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white shadow-lg py-2' : 'bg-[#f6824d] py-4'
-      }`}>
+      <nav
+        className={`fixed w-full z-50 transition-all duration-500 ${
+          scrolled ? "bg-white shadow-lg py-2" : "bg-[#f6824d] py-4"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             {/* Logo */}
@@ -68,9 +82,11 @@ const Navbar = () => {
                   src={logo}
                   alt="Transparency Bangladesh Logo"
                 />
-                <span className={`ml-2 text-xl md:text-2xl font-bold transition-all duration-300 ${
-                  scrolled ? 'text-[#f6824d]' : 'text-white'
-                }`}>
+                <span
+                  className={`ml-2 text-xl md:text-2xl font-bold transition-all duration-300 ${
+                    scrolled ? "text-[#f6824d]" : "text-white"
+                  }`}
+                >
                   Transparency Bangladesh
                 </span>
               </div>
@@ -79,12 +95,14 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               <NavLink
-                to='/'
+                to="/"
                 className={({ isActive }) =>
                   `relative px-1 py-2 font-medium transition-all duration-300 ${
                     isActive
-                      ? 'text-[#33a954] font-bold'
-                      : scrolled ? 'text-gray-700 hover:text-[#f6824d]' : 'text-white hover:text-[#33a954]'
+                      ? "text-[#33a954] font-bold"
+                      : scrolled
+                      ? "text-gray-700 hover:text-[#f6824d]"
+                      : "text-white hover:text-[#33a954]"
                   }`
                 }
               >
@@ -93,20 +111,26 @@ const Navbar = () => {
               </NavLink>
 
               <Link to="/AboutUs">
-                <button className={`relative px-1 py-2 font-medium transition-all duration-300 ${
-                  scrolled ? 'text-gray-700 hover:text-[#f6824d]' : 'text-white hover:text-[#33a954]'
-                }`}>
+                <button
+                  className={`relative px-1 py-2 font-medium transition-all duration-300 ${
+                    scrolled
+                      ? "text-gray-700 hover:text-[#f6824d]"
+                      : "text-white hover:text-[#33a954]"
+                  }`}
+                >
                   About
                 </button>
               </Link>
 
               <NavLink
-                to='/ContactPage'
+                to="/ContactPage"
                 className={({ isActive }) =>
                   `relative px-1 py-2 font-medium transition-all duration-300 ${
                     isActive
-                      ? 'text-[#33a954] font-bold'
-                      : scrolled ? 'text-gray-700 hover:text-[#f6824d]' : 'text-white hover:text-[#33a954]'
+                      ? "text-[#33a954] font-bold"
+                      : scrolled
+                      ? "text-gray-700 hover:text-[#f6824d]"
+                      : "text-white hover:text-[#33a954]"
                   }`
                 }
               >
@@ -114,14 +138,16 @@ const Navbar = () => {
               </NavLink>
 
               {/* Conditionally show Dashboard */}
-              {user && (
+              {isAuthed && (
                 <NavLink
-                  to='/dashboard'
+                  to="/dashboard"
                   className={({ isActive }) =>
                     `relative px-1 py-2 font-medium transition-all duration-300 ${
                       isActive
-                        ? 'text-[#33a954] font-bold'
-                        : scrolled ? 'text-gray-700 hover:text-[#f6824d]' : 'text-white hover:text-[#33a954]'
+                        ? "text-[#33a954] font-bold"
+                        : scrolled
+                        ? "text-gray-700 hover:text-[#f6824d]"
+                        : "text-white hover:text-[#33a954]"
                     }`
                   }
                 >
@@ -136,8 +162,8 @@ const Navbar = () => {
                     onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                     className={`p-2 rounded-full relative ${
                       scrolled
-                        ? 'text-gray-700 hover:bg-gray-100'
-                        : 'text-white hover:bg-[#e67342]'
+                        ? "text-gray-700 hover:bg-gray-100"
+                        : "text-white hover:bg-[#e67342]"
                     } transition-colors duration-300`}
                   >
                     <FiBell className="h-5 w-5" />
@@ -153,15 +179,17 @@ const Navbar = () => {
                     <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg overflow-hidden z-50">
                       <div className="py-1">
                         <div className="px-4 py-2 border-b bg-gray-50">
-                          <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                          <h3 className="text-sm font-medium text-gray-900">
+                            Notifications
+                          </h3>
                         </div>
 
                         {latestNotifications.length > 0 ? (
-                          latestNotifications.map(notification => (
+                          latestNotifications.map((notification) => (
                             <div
                               key={notification.id}
                               className={`px-4 py-3 border-b hover:bg-gray-50 cursor-pointer ${
-                                !notification.read ? 'bg-blue-50' : ''
+                                !notification.read ? "bg-blue-50" : ""
                               }`}
                               onClick={() => {
                                 if (!notification.read) {
@@ -172,21 +200,25 @@ const Navbar = () => {
                                 // navigate('/case');
                               }}
                             >
-                              <p className="text-sm text-gray-800">{notification.text}</p>
+                              <p className="text-sm text-gray-800">
+                                {notification.text}
+                              </p>
                               <p className="text-xs text-gray-500 mt-1">
                                 {formatTimeDifference(notification.date)}
                               </p>
                             </div>
                           ))
                         ) : (
-                          <p className="px-4 py-3 text-sm text-gray-500">No notifications</p>
+                          <p className="px-4 py-3 text-sm text-gray-500">
+                            No notifications
+                          </p>
                         )}
 
                         <div className="px-4 py-2 bg-gray-50 text-center">
                           <button
                             className="text-sm text-[#33a954] font-medium hover:underline"
                             onClick={() => {
-                              navigate('/notifications');
+                              navigate("/notifications");
                               setIsNotificationOpen(false);
                             }}
                           >
@@ -200,7 +232,7 @@ const Navbar = () => {
               )}
 
               {/* Conditionally show Login/Logout */}
-              {user ? (
+              {isAuthed ? (
                 <button
                   onClick={handleLogout}
                   className="flex items-center px-4 py-2 bg-[#33a954] text-white rounded-full hover:bg-[#2a8d45] transition-all duration-300 shadow-md hover:shadow-lg"
@@ -210,7 +242,7 @@ const Navbar = () => {
                 </button>
               ) : (
                 <NavLink
-                  to='/LoginPage'
+                  to="/LoginPage"
                   className="flex items-center px-4 py-2 bg-[#33a954] text-white rounded-full hover:bg-[#2a8d45] transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <FiUser className="mr-2" />
@@ -226,13 +258,13 @@ const Navbar = () => {
                 <div className="relative mr-3">
                   <button
                     onClick={() => {
-                      navigate('/notifications');
+                      navigate("/notifications");
                       setIsMenuOpen(false);
                     }}
                     className={`p-2 rounded-full relative ${
                       scrolled
-                        ? 'text-gray-700 hover:bg-gray-100'
-                        : 'text-white hover:bg-[#e67342]'
+                        ? "text-gray-700 hover:bg-gray-100"
+                        : "text-white hover:bg-[#e67342]"
                     } transition-colors duration-300`}
                   >
                     <FiBell className="h-6 w-6" />
@@ -248,7 +280,9 @@ const Navbar = () => {
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className={`p-2 rounded-full ${
-                  scrolled ? 'bg-[#f6824d] text-white' : 'bg-white text-[#f6824d]'
+                  scrolled
+                    ? "bg-[#f6824d] text-white"
+                    : "bg-white text-[#f6824d]"
                 }`}
               >
                 {isMenuOpen ? (
@@ -264,7 +298,7 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div
           className={`md:hidden fixed inset-0 z-40 bg-white transform ${
-            isMenuOpen ? 'translate-y-0' : '-translate-y-full'
+            isMenuOpen ? "translate-y-0" : "-translate-y-full"
           } transition-transform duration-500 ease-in-out`}
         >
           <div className="flex flex-col h-full">
@@ -289,7 +323,7 @@ const Navbar = () => {
 
             <div className="flex flex-col items-center justify-center flex-grow space-y-5">
               <NavLink
-                to='/'
+                to="/"
                 className="text-2xl font-medium px-4 py-2 transition-all text-black"
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -306,7 +340,7 @@ const Navbar = () => {
               </Link>
 
               <NavLink
-                to='/ContactPage'
+                to="/ContactPage"
                 className="text-2xl font-medium px-4 py-2 transition-all text-black"
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -314,9 +348,9 @@ const Navbar = () => {
               </NavLink>
 
               {/* Conditionally show Dashboard in mobile */}
-              {user && (
+              {isAuthed && (
                 <NavLink
-                  to='/dashboard'
+                  to="/dashboard"
                   className="text-2xl font-medium px-4 py-2 transition-all text-black"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -327,7 +361,7 @@ const Navbar = () => {
               {/* Conditionally show Notifications in mobile */}
               {user && (
                 <NavLink
-                  to='/notifications'
+                  to="/notifications"
                   className="text-2xl font-medium px-4 py-2 transition-all text-black flex items-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -342,7 +376,7 @@ const Navbar = () => {
               )}
 
               {/* Conditionally show Login/Logout in mobile */}
-              {user ? (
+              {isAuthed ? (
                 <button
                   onClick={handleLogout}
                   className="mt-8 flex items-center px-6 py-3 bg-[#33a954] text-white text-xl rounded-full hover:bg-[#2a8d45] transition-all duration-300"
@@ -352,7 +386,7 @@ const Navbar = () => {
                 </button>
               ) : (
                 <NavLink
-                  to='/LoginPage'
+                  to="/LoginPage"
                   className="mt-8 flex items-center px-6 py-3 bg-[#33a954] text-white text-xl rounded-full hover:bg-[#2a8d45] transition-all duration-300"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -370,9 +404,11 @@ const Navbar = () => {
       </nav>
 
       {/* Spacer to prevent content overlap */}
-      <div className={`w-full transition-all duration-500 ${
-        scrolled ? 'h-16 md:h-20' : 'h-24 md:h-28'
-      }`}></div>
+      <div
+        className={`w-full transition-all duration-500 ${
+          scrolled ? "h-16 md:h-20" : "h-24 md:h-28"
+        }`}
+      ></div>
     </>
   );
 };

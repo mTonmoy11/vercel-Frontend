@@ -1,44 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { FiSend, FiUser, FiFileText, FiCreditCard, FiPhone, FiChevronDown, FiEyeOff, FiAward, FiMapPin, FiPaperclip, FiX } from 'react-icons/fi';
-
+import React, { useState, useEffect } from "react";
+import {
+  FiSend,
+  FiUser,
+  FiFileText,
+  FiCreditCard,
+  FiPhone,
+  FiChevronDown,
+  FiEyeOff,
+  FiAward,
+  FiMapPin,
+  FiPaperclip,
+  FiX,
+} from "react-icons/fi";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 const ReportingTool = () => {
-  const [problemType, setProblemType] = useState('');
-  const [description, setDescription] = useState('');
-  const [incidentAddress, setIncidentAddress] = useState('');
-  const [incidentDivision, setIncidentDivision] = useState('');
+  const [problemType, setProblemType] = useState("");
+  const [description, setDescription] = useState("");
+  const [incidentAddress, setIncidentAddress] = useState("");
+  const [incidentDivision, setIncidentDivision] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showRewardInfo, setShowRewardInfo] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [files, setFiles] = useState([]);
+  const { user } = useAuth();
+  const location = useLocation();
+  const regUserData = location.state?.regUserData;
+
+  // Example: pre-fill form fields
+  const [reporterInfo, setReporterInfo] = useState({
+    name: regUserData?.name || "",
+    phone: regUserData?.phone_number || "",
+    address: regUserData?.address || "",
+  });
+  //console.log(reporterInfo); // Log reporter info for debugging
 
   // User input fields
-  const [reporterInfo, setReporterInfo] = useState({
-    name: '',
-    phone: '',
-    address: ''
-  });
 
   const problemTypes = [
-    'Bribery',
-    'Embezzlement',
-    'Fraud',
-    'Nepotism',
-    'Abuse of Power',
-    'Procurement Corruption',
-    'Other'
+    "Bribery",
+    "Embezzlement",
+    "Fraud",
+    "Nepotism",
+    "Abuse of Power",
+    "Procurement Corruption",
+    "Other",
   ];
 
   const divisions = [
-    'Dhaka',
-    'Chittagong',
-    'Rajshahi',
-    'Khulna',
-    'Barishal',
-    'Sylhet',
-    'Rangpur',
-    'Mymensingh'
+    "Dhaka",
+    "Chittagong",
+    "Rajshahi",
+    "Khulna",
+    "Barishal",
+    "Sylhet",
+    "Rangpur",
+    "Mymensingh",
   ];
 
   useEffect(() => {
@@ -52,11 +71,56 @@ const ReportingTool = () => {
     // Validate reporter info if not anonymous
     if (!isAnonymous) {
       if (!reporterInfo.name || !reporterInfo.phone || !reporterInfo.address) {
-        alert('Please fill in all reporter information fields');
+        alert("Please fill in all reporter information fields");
         setIsSubmitting(false);
         return;
       }
     }
+
+    const now = new Date();
+    const formatted = now.toLocaleString();
+
+    // Prepare report data based on anonymous status
+    const reportData = {
+      problemType,
+      description,
+      incidentAddress,
+      incidentDivision,
+      isAnonymous,
+      submittedAt: formatted,
+    };
+
+    // Only include reporter info if NOT anonymous
+    if (!isAnonymous) {
+      reportData.name = reporterInfo.name;
+      reportData.phone = String(reporterInfo.phone);
+      reportData.address = reporterInfo.address;
+      reportData.userId = user?.uid || user?._id || "";
+    } else {
+      // For anonymous reports, don't include any personal info
+      reportData.name = "Anonymous";
+      reportData.phone = null;
+      reportData.address = null;
+      reportData.userId = null;
+    }
+
+    fetch("http://localhost:5000/reports", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reportData),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Error submitting report:", error);
+        alert("Failed to submit report. Please try again.");
+        setIsSubmitting(false);
+        return;
+      });
 
     // Prepare form data
     const formData = {
@@ -65,11 +129,11 @@ const ReportingTool = () => {
       incidentAddress,
       incidentDivision,
       isAnonymous,
-      files: files.map(file => file.name),
-      userInfo: isAnonymous ? null : reporterInfo
+      files: files.map((file) => file.name),
+      userInfo: isAnonymous ? null : reporterInfo,
     };
 
-    console.log('Submitting report:', formData);
+    console.log("Submitting report:", formData);
 
     // Simulate API call
     setTimeout(() => {
@@ -78,18 +142,18 @@ const ReportingTool = () => {
 
       // Reset form after success
       setTimeout(() => {
-        setProblemType('');
-        setDescription('');
-        setIncidentAddress('');
-        setIncidentDivision('');
+        setProblemType("");
+        setDescription("");
+        setIncidentAddress("");
+        setIncidentDivision("");
         setFiles([]);
         setIsAnonymous(false);
         setShowFileUpload(false);
         setIsSubmitted(false);
         setReporterInfo({
-          name: '',
-          phone: '',
-          address: ''
+          name: "",
+          phone: "",
+          address: "",
         });
       }, 4000);
     }, 1500);
@@ -101,14 +165,14 @@ const ReportingTool = () => {
   };
 
   const removeFile = (fileName) => {
-    setFiles(files.filter(file => file.name !== fileName));
+    setFiles(files.filter((file) => file.name !== fileName));
   };
 
   const handleReporterInfoChange = (e) => {
     const { name, value } = e.target;
-    setReporterInfo(prev => ({
+    setReporterInfo((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -117,11 +181,23 @@ const ReportingTool = () => {
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center transform transition-all duration-700 scale-100 animate-fade-in">
           <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            <svg
+              className="w-12 h-12 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              ></path>
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-3">Report Submitted Successfully!</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+            Report Submitted Successfully!
+          </h2>
           <p className="text-gray-600 mb-6">
             {isAnonymous
               ? "Your anonymous report has been received. Thank you for helping fight corruption."
@@ -147,7 +223,8 @@ const ReportingTool = () => {
             Corruption Reporting Tool
           </h1>
           <p className="mt-2 opacity-90">
-            Help us fight corruption by providing detailed information about incidents
+            Help us fight corruption by providing detailed information about
+            incidents
           </p>
         </div>
 
@@ -165,9 +242,13 @@ const ReportingTool = () => {
                 className="w-full p-4 pl-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 appearance-none"
                 required
               >
-                <option value="" disabled>Select a problem type</option>
+                <option value="" disabled>
+                  Select a problem type
+                </option>
                 {problemTypes.map((type, index) => (
-                  <option key={index} value={type}>{type}</option>
+                  <option key={index} value={type}>
+                    {type}
+                  </option>
                 ))}
               </select>
               <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -219,9 +300,13 @@ const ReportingTool = () => {
                 className="w-full p-4 pl-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 appearance-none"
                 required
               >
-                <option value="" disabled>Select division</option>
+                <option value="" disabled>
+                  Select division
+                </option>
                 {divisions.map((div, index) => (
-                  <option key={index} value={div}>{div}</option>
+                  <option key={index} value={div}>
+                    {div}
+                  </option>
                 ))}
               </select>
               <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -238,7 +323,7 @@ const ReportingTool = () => {
               className="flex items-center text-orange-600 font-medium mb-3"
             >
               <FiPaperclip className="mr-2" />
-              {showFileUpload ? 'Hide File Upload' : 'Attach Files (Optional)'}
+              {showFileUpload ? "Hide File Upload" : "Attach Files (Optional)"}
             </button>
 
             {showFileUpload && (
@@ -248,7 +333,8 @@ const ReportingTool = () => {
                     Upload supporting documents
                   </label>
                   <p className="text-sm text-gray-500 mb-3">
-                    Photos, documents, or other evidence (PDF, JPG, PNG - Max 5MB each)
+                    Photos, documents, or other evidence (PDF, JPG, PNG - Max
+                    5MB each)
                   </p>
                   <div className="relative">
                     <input
@@ -259,18 +345,27 @@ const ReportingTool = () => {
                     />
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-white">
                       <FiPaperclip className="mx-auto text-gray-400 text-2xl mb-2" />
-                      <p className="text-gray-600 font-medium">Click to browse or drag files here</p>
-                      <p className="text-sm text-gray-500 mt-1">Max 5 files allowed</p>
+                      <p className="text-gray-600 font-medium">
+                        Click to browse or drag files here
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Max 5 files allowed
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {files.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-gray-700 font-medium mb-2">Selected files:</h3>
+                    <h3 className="text-gray-700 font-medium mb-2">
+                      Selected files:
+                    </h3>
                     <div className="space-y-2">
                       {files.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200"
+                        >
                           <div className="flex items-center truncate">
                             <FiPaperclip className="text-gray-500 mr-2 flex-shrink-0" />
                             <span className="truncate">{file.name}</span>
@@ -297,8 +392,12 @@ const ReportingTool = () => {
               <div className="flex items-center">
                 <FiEyeOff className="text-blue-600 mr-3 text-xl" />
                 <div>
-                  <h3 className="font-bold text-gray-800">Submit Anonymously</h3>
-                  <p className="text-sm text-gray-600">Your identity will not be recorded</p>
+                  <h3 className="font-bold text-gray-800">
+                    Submit Anonymously
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Your identity will not be recorded
+                  </p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -315,8 +414,10 @@ const ReportingTool = () => {
             {isAnonymous && (
               <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
                 <p className="text-gray-700">
-                  <span className="font-bold text-orange-600">Note:</span> By submitting anonymously,
-                  you will <span className="font-bold">not be eligible</span> for our reward program.
+                  <span className="font-bold text-orange-600">Note:</span> By
+                  submitting anonymously, you will{" "}
+                  <span className="font-bold">not be eligible</span> for our
+                  reward program.
                 </p>
               </div>
             )}
@@ -337,7 +438,7 @@ const ReportingTool = () => {
                   className="flex items-center text-sm text-orange-600 font-medium"
                 >
                   <FiAward className="mr-1" />
-                  {showRewardInfo ? 'Hide Reward Info' : 'About Rewards'}
+                  {showRewardInfo ? "Hide Reward Info" : "About Rewards"}
                 </button>
               </div>
 
@@ -348,7 +449,8 @@ const ReportingTool = () => {
                     Reward Program Information
                   </h3>
                   <p className="text-gray-700 mb-2">
-                    Our reward program offers compensation for verified reports that lead to successful anti-corruption actions.
+                    Our reward program offers compensation for verified reports
+                    that lead to successful anti-corruption actions.
                   </p>
                   <ul className="text-gray-700 list-disc pl-5 space-y-1">
                     <li>You will get 25% tk from criminal's fine</li>
@@ -364,7 +466,9 @@ const ReportingTool = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Name */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-3">Full Name</label>
+                  <label className="block text-gray-700 font-medium mb-3">
+                    Full Name
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -383,7 +487,9 @@ const ReportingTool = () => {
 
                 {/* Phone Number */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-3">Phone Number</label>
+                  <label className="block text-gray-700 font-medium mb-3">
+                    Phone Number
+                  </label>
                   <div className="relative">
                     <input
                       type="tel"
@@ -402,7 +508,9 @@ const ReportingTool = () => {
 
                 {/* Address */}
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 font-medium mb-3">Your Address</label>
+                  <label className="block text-gray-700 font-medium mb-3">
+                    Your Address
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -427,16 +535,33 @@ const ReportingTool = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-8 py-4 rounded-xl font-bold text-white flex items-center transition-all duration-300 transform hover:scale-105 ${isSubmitting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg'
-                }`}
+              className={`px-8 py-4 rounded-xl font-bold text-white flex items-center transition-all duration-300 transform hover:scale-105 ${
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
+              }`}
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Processing...
                 </>
@@ -453,28 +578,62 @@ const ReportingTool = () => {
 
       {/* Additional Information */}
       <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Your Safety is Our Priority</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-4">
+          Your Safety is Our Priority
+        </h3>
         <ul className="space-y-3 text-gray-600">
           <li className="flex items-start">
             <div className="bg-blue-100 p-1 rounded-full mr-3 mt-1">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              <svg
+                className="w-4 h-4 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
               </svg>
             </div>
             <span>All reports are treated with strict confidentiality</span>
           </li>
           <li className="flex items-start">
             <div className="bg-blue-100 p-1 rounded-full mr-3 mt-1">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              <svg
+                className="w-4 h-4 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
               </svg>
             </div>
-            <span>Anonymous reports contain no personally identifiable information</span>
+            <span>
+              Anonymous reports contain no personally identifiable information
+            </span>
           </li>
           <li className="flex items-start">
             <div className="bg-blue-100 p-1 rounded-full mr-3 mt-1">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              <svg
+                className="w-4 h-4 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
               </svg>
             </div>
             <span>Reports are encrypted and securely stored</span>

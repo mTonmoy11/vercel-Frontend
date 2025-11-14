@@ -8,10 +8,10 @@ import education from '../../assets/images/education.jpg';
 import reward from '../../assets/images/reward.jpg';
 import govtspending from '../../assets/images/govtspending.jpg';
 
-const Features = () => {
+const Features = ({regUser}) => {
   const { user } = useAuth(); // Get current user from auth context
   const navigate = useNavigate(); // Get navigate function
-
+  
   // Map features to their background images
   const featureBackgrounds = {
     '/reporting': reportingtool,
@@ -21,6 +21,7 @@ const Features = () => {
     '/reward': reward,
     '/DetailedReport': govtspending
   };
+  console.log(regUser); // Log the number of registered users         
 
   // Feature data array
   const features = [
@@ -99,9 +100,16 @@ const Features = () => {
     if (feature.requiresAuth && !user) {
       // Redirect to login with return path
       navigate('/LoginPage', { state: { from: feature.path } });
+    } 
+    else {
+    // If reporting tool, send matched regUser data
+    if (feature.path === '/reporting' && regUser && user?.email) {
+      const matchedUser = regUser.find(u => u.email === user?.email);
+      navigate(feature.path, { state: { regUserData: matchedUser } });
     } else {
       navigate(feature.path);
     }
+  }
   };
 
   return (

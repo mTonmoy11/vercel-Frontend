@@ -1,22 +1,14 @@
-import { useState, useEffect } from 'react';
-import AdminSidebar from '../components/AdminSidebar';
-import AdminHeader from '../components/AdminHeader';
-import { useAuth } from '../../context/AuthContext';
-import { Navigate, Outlet } from 'react-router-dom';
+import { useState } from "react";
+import AdminSidebar from "../components/AdminSidebar";
+import AdminHeader from "../components/AdminHeader";
+import { useAuth } from "../../context/AuthContext";
+import { Navigate, Outlet } from "react-router-dom";
 
 const AdminLayout = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, authReady } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if authentication state has been determined
-    if (user !== undefined) {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  if (isLoading) {
+  if (!authReady) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -24,7 +16,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user && !isAdmin) {
     return <Navigate to="/LoginPage" replace />;
   }
 

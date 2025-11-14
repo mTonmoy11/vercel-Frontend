@@ -1,68 +1,198 @@
 import { useEffect, useState } from "react";
-import { FiSearch, FiFilter, FiChevronDown, FiChevronUp, FiExternalLink } from "react-icons/fi";
+import {
+  FiSearch,
+  FiFilter,
+  FiChevronDown,
+  FiChevronUp,
+  FiExternalLink,
+} from "react-icons/fi";
 
 const SearchCase = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
+    fetchCases();
   }, []);
 
   const [searchType, setSearchType] = useState("caseId");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     status: "",
     caseType: "",
-    minSentence: "",
-    maxSentence: ""
+    division: "",
   });
 
-  const cases = [
-    { id: "C-2023-001", name: "State vs. Rahman", type: "Bribery", status: "Ongoing", sentence: "Pending", lastUpdate: "2023-06-15" },
-    { id: "C-2023-045", name: "State vs. Chowdhury", type: "Embezzlement", status: "Convicted", sentence: "10 years", lastUpdate: "2023-05-22" },
-    { id: "C-2023-112", name: "State vs. Ahmed", type: "Fraud", status: "Appealed", sentence: "7 years", lastUpdate: "2023-07-01" },
-    { id: "C-2023-087", name: "State vs. Khan", type: "Nepotism", status: "Investigation", sentence: "Pending", lastUpdate: "2023-06-30" },
-    { id: "C-2023-033", name: "State vs. Hossain", type: "Abuse of Power", status: "Dismissed", sentence: "None", lastUpdate: "2023-04-18" },
-    { id: "C-2023-156", name: "State vs. Ali", type: "Fraud", status: "Convicted", sentence: "15 years", lastUpdate: "2023-07-10" },
-  ];
+  const fetchCases = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/reports");
+      const result = await response.json();
 
-  const filteredCases = cases.filter(caseItem => {
+      if (result.success) {
+        // Transform backend data to match case structure
+        const transformedCases = result.data.map((report) => ({
+          id: report._id,
+          caseId: `C-${new Date(report.createdAt).getFullYear()}-${report._id
+            .slice(-6)
+            .toUpperCase()}`,
+          name: report.isAnonymous
+            ? "Anonymous Report"
+            : `State vs. ${report.name || "Unknown"}`,
+          type: report.problemType,
+          status: report.status,
+          division: report.incidentDivision,
+          description: report.description,
+          address: report.incidentAddress,
+          isAnonymous: report.isAnonymous,
+          lastUpdate: new Date(report.createdAt).toLocaleDateString(),
+          submittedAt: report.submittedAt,
+          reporterInfo: report.isAnonymous
+            ? null
+            : {
+                name: report.name,
+                phone: report.phone,
+                address: report.address,
+              },
+        }));
+        setCases(transformedCases);
+      } else {
+        setError("Failed to fetch cases");
+      }
+    } catch (err) {
+      console.error("Error fetching cases:", err);
+      setError("Error loading cases");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCases = cases.filter((caseItem) => {
     // Search filter
-    const matchesSearch = searchTerm === "" ||
-      caseItem.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.name.toLowerCase().includes(searchTerm.toLowerCase());
+    let matchesSearch = true;
+    if (searchTerm !== "") {
+      if (searchType === "caseId") {
+        matchesSearch =
+          caseItem.caseId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          false;
+      } else if (searchType === "name") {
+        matchesSearch =
+          caseItem.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          false;
+      } else if (searchType === "type") {
+        matchesSearch =
+          caseItem.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          false;
+      }
+    }
 
     // Status filter
-    const matchesStatus = filters.status === "" ||
-      caseItem.status.toLowerCase().includes(filters.status.toLowerCase());
+    const matchesStatus =
+      filters.status === "" ||
+      caseItem.status?.toLowerCase() === filters.status.toLowerCase();
 
     // Type filter
-    const matchesType = filters.caseType === "" ||
-      caseItem.type.toLowerCase().includes(filters.caseType.toLowerCase());
+    const matchesType =
+      filters.caseType === "" ||
+      caseItem.type?.toLowerCase() === filters.caseType.toLowerCase();
 
-    return matchesSearch && matchesStatus && matchesType;
+    // Division filter
+    const matchesDivision =
+      filters.division === "" ||
+      caseItem.division?.toLowerCase() === filters.division.toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesType && matchesDivision;
   });
 
   const getStatusColor = (status) => {
-    switch(status.toLowerCase()) {
-      case "ongoing": return "bg-blue-100 text-blue-800";
-      case "convicted": return "bg-green-100 text-green-800";
-      case "appealed": return "bg-purple-100 text-purple-800";
-      case "investigation": return "bg-yellow-100 text-yellow-800";
-      case "dismissed": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+    if (!status) return "bg-gray-100 text-gray-800";
+
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "under-review":
+        return "bg-blue-100 text-blue-800";
+      case "resolved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusText = (status) => {
+    if (!status) return "Unknown";
+
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "Pending Investigation";
+      case "under-review":
+        return "Under Review";
+      case "resolved":
+        return "Resolved";
+      case "rejected":
+        return "Rejected";
+      default:
+        return status;
     }
   };
 
   const getTypeColor = (type) => {
-    switch(type.toLowerCase()) {
-      case "bribery": return "text-orange-600";
-      case "embezzlement": return "text-red-600";
-      case "fraud": return "text-purple-600";
-      case "nepotism": return "text-indigo-600";
-      case "abuse of power": return "text-cyan-600";
-      default: return "text-gray-700";
+    if (!type) return "text-gray-700";
+
+    switch (type.toLowerCase()) {
+      case "bribery":
+        return "text-orange-600";
+      case "embezzlement":
+        return "text-red-600";
+      case "fraud":
+        return "text-purple-600";
+      case "nepotism":
+        return "text-indigo-600";
+      case "abuse of power":
+        return "text-cyan-600";
+      case "procurement corruption":
+        return "text-pink-600";
+      default:
+        return "text-gray-700";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading cases...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 font-medium">{error}</p>
+            <button
+              onClick={fetchCases}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4">
@@ -72,7 +202,8 @@ const SearchCase = () => {
             Anti-Corruption Case Search
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Search and filter through corruption cases with our comprehensive database
+            Search and filter through corruption reports with our comprehensive
+            database
           </p>
         </div>
 
@@ -90,14 +221,17 @@ const SearchCase = () => {
                   className="bg-gray-100 text-gray-700 px-4 focus:outline-none"
                 >
                   <option value="caseId">Case ID</option>
-                  <option value="name">Defendant Name</option>
+                  <option value="name">Case Name</option>
                   <option value="type">Case Type</option>
                 </select>
                 <input
                   type="text"
                   placeholder={
-                    searchType === "caseId" ? "Enter case ID (e.g. C-2023-001)" :
-                    searchType === "name" ? "Enter defendant name" : "Enter case type"
+                    searchType === "caseId"
+                      ? "Enter case ID (e.g. C-2023-ABC123)"
+                      : searchType === "name"
+                      ? "Enter case name"
+                      : "Enter case type"
                   }
                   className="flex-1 p-4 focus:outline-none"
                   value={searchTerm}
@@ -124,28 +258,35 @@ const SearchCase = () => {
               </div>
 
               {isFilterOpen && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl mt-3 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl mt-3 animate-fade-in">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Status</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Status
+                    </label>
                     <select
                       value={filters.status}
-                      onChange={(e) => setFilters({...filters, status: e.target.value})}
+                      onChange={(e) =>
+                        setFilters({ ...filters, status: e.target.value })
+                      }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500"
                     >
                       <option value="">All Statuses</option>
-                      <option value="Ongoing">Ongoing</option>
-                      <option value="Convicted">Convicted</option>
-                      <option value="Appealed">Appealed</option>
-                      <option value="Investigation">Investigation</option>
-                      <option value="Dismissed">Dismissed</option>
+                      <option value="pending">Pending</option>
+                      <option value="under-review">Under Review</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="rejected">Rejected</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Case Type</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Case Type
+                    </label>
                     <select
                       value={filters.caseType}
-                      onChange={(e) => setFilters({...filters, caseType: e.target.value})}
+                      onChange={(e) =>
+                        setFilters({ ...filters, caseType: e.target.value })
+                      }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500"
                     >
                       <option value="">All Types</option>
@@ -154,6 +295,33 @@ const SearchCase = () => {
                       <option value="Fraud">Fraud</option>
                       <option value="Nepotism">Nepotism</option>
                       <option value="Abuse of Power">Abuse of Power</option>
+                      <option value="Procurement Corruption">
+                        Procurement Corruption
+                      </option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Division
+                    </label>
+                    <select
+                      value={filters.division}
+                      onChange={(e) =>
+                        setFilters({ ...filters, division: e.target.value })
+                      }
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500"
+                    >
+                      <option value="">All Divisions</option>
+                      <option value="Dhaka">Dhaka</option>
+                      <option value="Chittagong">Chittagong</option>
+                      <option value="Rajshahi">Rajshahi</option>
+                      <option value="Khulna">Khulna</option>
+                      <option value="Barishal">Barishal</option>
+                      <option value="Sylhet">Sylhet</option>
+                      <option value="Rangpur">Rangpur</option>
+                      <option value="Mymensingh">Mymensingh</option>
                     </select>
                   </div>
                 </div>
@@ -165,7 +333,7 @@ const SearchCase = () => {
             <button
               onClick={() => {
                 setSearchTerm("");
-                setFilters({ status: "", caseType: "", minSentence: "", maxSentence: "" });
+                setFilters({ status: "", caseType: "", division: "" });
               }}
               className="text-orange-600 hover:text-orange-800 text-sm"
             >
@@ -182,9 +350,9 @@ const SearchCase = () => {
                   <th className="py-4 px-6 font-bold text-lg">Case ID</th>
                   <th className="py-4 px-6 font-bold text-lg">Case Name</th>
                   <th className="py-4 px-6 font-bold text-lg">Type</th>
+                  <th className="py-4 px-6 font-bold text-lg">Division</th>
                   <th className="py-4 px-6 font-bold text-lg">Status</th>
-                  <th className="py-4 px-6 font-bold text-lg">Sentence</th>
-                  <th className="py-4 px-6 font-bold text-lg">Last Update</th>
+                  <th className="py-4 px-6 font-bold text-lg">Submitted</th>
                   <th className="py-4 px-6 font-bold text-lg">Actions</th>
                 </tr>
               </thead>
@@ -198,34 +366,51 @@ const SearchCase = () => {
                   >
                     <td className="py-4 px-6 font-medium text-gray-900">
                       <span className="inline-block bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm">
-                        {caseItem.id}
+                        {caseItem.caseId}
                       </span>
-                    </td>
-                    <td className="py-4 px-6 font-medium text-gray-900">
-                      {caseItem.name}
-                    </td>
-                    <td className={`py-4 px-6 font-medium ${getTypeColor(caseItem.type)}`}>
-                      {caseItem.type}
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseItem.status)}`}>
-                        {caseItem.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 font-medium">
-                      {caseItem.sentence === "None" ? (
-                        <span className="text-gray-500">No sentence</span>
-                      ) : caseItem.sentence === "Pending" ? (
-                        <span className="text-orange-600">Pending</span>
-                      ) : (
-                        <span className="text-red-600 font-semibold">{caseItem.sentence}</span>
+                      <div className="font-medium text-gray-900">
+                        {caseItem.name}
+                      </div>
+                      {caseItem.isAnonymous && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                          Anonymous
+                        </span>
                       )}
+                    </td>
+                    <td
+                      className={`py-4 px-6 font-medium ${getTypeColor(
+                        caseItem.type
+                      )}`}
+                    >
+                      {caseItem.type}
+                    </td>
+                    <td className="py-4 px-6 text-gray-700">
+                      {caseItem.division}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                          caseItem.status
+                        )}`}
+                      >
+                        {getStatusText(caseItem.status)}
+                      </span>
                     </td>
                     <td className="py-4 px-6 text-gray-600">
                       {caseItem.lastUpdate}
                     </td>
                     <td className="py-4 px-6">
-                      <button className="flex items-center text-orange-600 hover:text-orange-800">
+                      <button
+                        className="flex items-center text-orange-600 hover:text-orange-800"
+                        onClick={() => {
+                          // You can implement a modal or navigate to details page
+                          alert(
+                            `Case Details:\n\nID: ${caseItem.caseId}\nType: ${caseItem.type}\nDivision: ${caseItem.division}\nStatus: ${caseItem.status}\n\nDescription: ${caseItem.description}`
+                          );
+                        }}
+                      >
                         <span>View Details</span>
                         <FiExternalLink className="ml-1" />
                       </button>
@@ -238,11 +423,13 @@ const SearchCase = () => {
 
           {filteredCases.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-gray-500 text-xl mb-4">No cases found matching your criteria</div>
+              <div className="text-gray-500 text-xl mb-4">
+                No cases found matching your criteria
+              </div>
               <button
                 onClick={() => {
                   setSearchTerm("");
-                  setFilters({ status: "", caseType: "", minSentence: "", maxSentence: "" });
+                  setFilters({ status: "", caseType: "", division: "" });
                 }}
                 className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
@@ -253,15 +440,26 @@ const SearchCase = () => {
         </div>
 
         <div className="mt-8 text-center text-gray-600">
-          <p>Showing {filteredCases.length} of {cases.length} cases</p>
-          <p className="mt-2">For more information about a specific case, contact our legal department</p>
+          <p>
+            Showing {filteredCases.length} of {cases.length} cases
+          </p>
+          <p className="mt-2">
+            For more information about a specific case, contact our legal
+            department
+          </p>
         </div>
       </div>
 
       <style jsx global>{`
         @keyframes fade-in {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .animate-fade-in {

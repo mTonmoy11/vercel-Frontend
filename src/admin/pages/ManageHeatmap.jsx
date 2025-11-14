@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   FiMap,
   FiBarChart2,
@@ -6,64 +6,50 @@ import {
   FiAlertTriangle,
   FiTrendingUp,
   FiCheckCircle,
-  FiActivity
-} from 'react-icons/fi';
+  FiActivity,
+  FiRefreshCw,
+} from "react-icons/fi";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function ManageHeatmap() {
   const [heatmapData, setHeatmapData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalReported: 0,
     totalSolved: 0,
     totalActive: 0,
-    highestReported: { division: '', count: 0 },
-    highestSolved: { division: '', count: 0 },
-    divisionData: []
+    highestReported: { division: "", count: 0 },
+    highestSolved: { division: "", count: 0 },
+    divisionData: [],
   });
 
-  // Mock data - replace with actual API calls
+  // Fetch real data from backend
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockData = [
-        { division: 'Dhaka', reportedCases: 142, solvedCases: 78, activeCases: 64 },
-        { division: 'Chittagong', reportedCases: 98, solvedCases: 42, activeCases: 56 },
-        { division: 'Rajshahi', reportedCases: 65, solvedCases: 35, activeCases: 30 },
-        { division: 'Khulna', reportedCases: 52, solvedCases: 28, activeCases: 24 },
-        { division: 'Barishal', reportedCases: 37, solvedCases: 15, activeCases: 22 },
-        { division: 'Sylhet', reportedCases: 45, solvedCases: 20, activeCases: 25 },
-        { division: 'Rangpur', reportedCases: 38, solvedCases: 18, activeCases: 20 },
-        { division: 'Mymensingh', reportedCases: 29, solvedCases: 12, activeCases: 17 },
-      ];
-
-      // Calculate statistics
-      const totalReported = mockData.reduce((sum, item) => sum + item.reportedCases, 0);
-      const totalSolved = mockData.reduce((sum, item) => sum + item.solvedCases, 0);
-      const totalActive = mockData.reduce((sum, item) => sum + item.activeCases, 0);
-
-      // Find divisions with highest counts
-      const highestReported = mockData.reduce((max, item) =>
-        item.reportedCases > max.count ? { division: item.division, count: item.reportedCases } : max,
-        { division: '', count: 0 }
-      );
-
-      const highestSolved = mockData.reduce((max, item) =>
-        item.solvedCases > max.count ? { division: item.division, count: item.solvedCases } : max,
-        { division: '', count: 0 }
-      );
-
-      setHeatmapData(mockData);
-      setStats({
-        totalReported,
-        totalSolved,
-        totalActive,
-        highestReported,
-        highestSolved,
-        divisionData: mockData
-      });
-      setLoading(false);
-    }, 1500);
+    fetchHeatmapData();
   }, []);
+
+  const fetchHeatmapData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/heatmap/statistics`);
+      const result = await response.json();
+
+      if (result.success) {
+        setStats(result.data);
+        setHeatmapData(result.data.divisionData);
+      } else {
+        setError("Failed to fetch heatmap data");
+      }
+    } catch (err) {
+      console.error("Error fetching heatmap data:", err);
+      setError("Error loading heatmap data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getPercentage = (value, total) => {
     return total > 0 ? Math.round((value / total) * 100) : 0;
@@ -74,17 +60,34 @@ function ManageHeatmap() {
   };
 
   const getMaxReported = () => {
-    return Math.max(...heatmapData.map(item => item.reportedCases), 1);
+    return Math.max(...heatmapData.map((item) => item.reportedCases), 1);
   };
 
   const getMaxSolved = () => {
-    return Math.max(...heatmapData.map(item => item.solvedCases), 1);
+    return Math.max(...heatmapData.map((item) => item.solvedCases), 1);
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-red-600 text-center">
+          <p className="text-xl font-semibold mb-2">Error Loading Data</p>
+          <p>{error}</p>
+          <button
+            onClick={fetchHeatmapData}
+            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -96,9 +99,18 @@ function ManageHeatmap() {
           <FiMap className="mr-3 text-orange-500" />
           Corruption Heatmap Dashboard
         </h1>
-        <div className="text-sm text-gray-600 bg-orange-50 p-3 rounded-lg">
-          <FiActivity className="inline mr-2 text-orange-500" />
-          Data updates automatically from reports and cases
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600 bg-orange-50 p-3 rounded-lg">
+            <FiActivity className="inline mr-2 text-orange-500" />
+            Data updates automatically from reports and cases
+          </div>
+          <button
+            onClick={fetchHeatmapData}
+            className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors flex items-center"
+          >
+            <FiRefreshCw className="mr-2" />
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -107,7 +119,9 @@ function ManageHeatmap() {
         <div className="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-blue-500">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-gray-500 font-medium">Total Reported Cases</h3>
+              <h3 className="text-gray-500 font-medium">
+                Total Reported Cases
+              </h3>
               <p className="text-3xl font-bold mt-2">{stats.totalReported}</p>
               <p className="text-sm text-gray-500 mt-1">Across all divisions</p>
             </div>
@@ -124,7 +138,8 @@ function ManageHeatmap() {
               <p className="text-3xl font-bold mt-2">{stats.totalSolved}</p>
               <div className="mt-1">
                 <span className="text-sm text-gray-500">
-                  {getPercentage(stats.totalSolved, stats.totalReported)}% of total
+                  {getPercentage(stats.totalSolved, stats.totalReported)}% of
+                  total
                 </span>
               </div>
             </div>
@@ -141,7 +156,8 @@ function ManageHeatmap() {
               <p className="text-3xl font-bold mt-2">{stats.totalActive}</p>
               <div className="mt-1">
                 <span className="text-sm text-gray-500">
-                  {getPercentage(stats.totalActive, stats.totalReported)}% of total
+                  {getPercentage(stats.totalActive, stats.totalReported)}% of
+                  total
                 </span>
               </div>
             </div>
@@ -157,49 +173,85 @@ function ManageHeatmap() {
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
           <div className="flex items-center mb-4">
             <FiAlertTriangle className="text-blue-600 mr-3 text-xl" />
-            <h3 className="text-lg font-bold text-gray-800">Highest Reported Cases</h3>
+            <h3 className="text-lg font-bold text-gray-800">
+              Highest Reported Cases
+            </h3>
           </div>
           <div className="flex items-end">
-            <div className="text-4xl font-bold text-blue-600">{stats.highestReported.count}</div>
+            <div className="text-4xl font-bold text-blue-600">
+              {stats.highestReported.count}
+            </div>
             <div className="ml-4">
-              <div className="text-xl font-semibold">{stats.highestReported.division}</div>
+              <div className="text-xl font-semibold">
+                {stats.highestReported.division || "N/A"}
+              </div>
               <p className="text-sm text-gray-600">
-                {getPercentage(stats.highestReported.count, stats.totalReported)}% of national total
+                {stats.highestReported.count > 0
+                  ? `${getPercentage(
+                      stats.highestReported.count,
+                      stats.totalReported
+                    )}% of national total`
+                  : "No data available"}
               </p>
             </div>
           </div>
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full"
-                style={{ width: `${getPercentage(stats.highestReported.count, stats.totalReported)}%` }}
-              ></div>
+          {stats.highestReported.count > 0 && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full"
+                  style={{
+                    width: `${getPercentage(
+                      stats.highestReported.count,
+                      stats.totalReported
+                    )}%`,
+                  }}
+                ></div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-2xl p-6 border border-green-200">
           <div className="flex items-center mb-4">
             <FiAward className="text-green-600 mr-3 text-xl" />
-            <h3 className="text-lg font-bold text-gray-800">Highest Solved Cases</h3>
+            <h3 className="text-lg font-bold text-gray-800">
+              Highest Solved Cases
+            </h3>
           </div>
           <div className="flex items-end">
-            <div className="text-4xl font-bold text-green-600">{stats.highestSolved.count}</div>
+            <div className="text-4xl font-bold text-green-600">
+              {stats.highestSolved.count}
+            </div>
             <div className="ml-4">
-              <div className="text-xl font-semibold">{stats.highestSolved.division}</div>
+              <div className="text-xl font-semibold">
+                {stats.highestSolved.division || "N/A"}
+              </div>
               <p className="text-sm text-gray-600">
-                {getPercentage(stats.highestSolved.count, stats.totalSolved)}% of national solved
+                {stats.highestSolved.count > 0
+                  ? `${getPercentage(
+                      stats.highestSolved.count,
+                      stats.totalSolved
+                    )}% of national solved`
+                  : "No data available"}
               </p>
             </div>
           </div>
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-green-600 h-2.5 rounded-full"
-                style={{ width: `${getPercentage(stats.highestSolved.count, stats.totalSolved)}%` }}
-              ></div>
+          {stats.highestSolved.count > 0 && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-green-600 h-2.5 rounded-full"
+                  style={{
+                    width: `${getPercentage(
+                      stats.highestSolved.count,
+                      stats.totalSolved
+                    )}%`,
+                  }}
+                ></div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -216,84 +268,145 @@ function ManageHeatmap() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Division</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reported Cases</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solved Cases</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Cases</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolution Rate</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {heatmapData.map((division) => {
-                const resolutionRate = getPercentage(division.solvedCases, division.reportedCases);
-                const maxReported = getMaxReported();
-                const maxSolved = getMaxSolved();
+          {heatmapData.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No data available yet. Cases will appear here once reported.
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Division
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Reported Cases
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Solved Cases
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Active Cases
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Resolution Rate
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {heatmapData.map((division) => {
+                  const resolutionRate = getPercentage(
+                    division.solvedCases,
+                    division.reportedCases
+                  );
+                  const maxReported = getMaxReported();
+                  const maxSolved = getMaxSolved();
 
-                return (
-                  <tr key={division.division} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                      {division.division}
-                    </td>
+                  return (
+                    <tr
+                      key={division.division}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                        {division.division}
+                      </td>
 
-                    {/* Reported Cases */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-gray-700 font-medium">{division.reportedCases}</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      {/* Reported Cases */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-gray-700 font-medium">
+                          {division.reportedCases}
+                        </div>
+                        {division.reportedCases > 0 && (
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{
+                                width: `${getBarWidth(
+                                  division.reportedCases,
+                                  maxReported
+                                )}%`,
+                              }}
+                            ></div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Solved Cases */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-gray-700 font-medium">
+                          {division.solvedCases}
+                        </div>
+                        {division.solvedCases > 0 && (
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div
+                              className="bg-green-600 h-2 rounded-full"
+                              style={{
+                                width: `${getBarWidth(
+                                  division.solvedCases,
+                                  maxSolved
+                                )}%`,
+                              }}
+                            ></div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Active Cases */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-gray-700 font-medium">
+                          {division.activeCases}
+                        </div>
+                        {division.activeCases > 0 && (
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div
+                              className="bg-orange-600 h-2 rounded-full"
+                              style={{
+                                width: `${getBarWidth(
+                                  division.activeCases,
+                                  maxReported
+                                )}%`,
+                              }}
+                            ></div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Resolution Rate */}
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${getBarWidth(division.reportedCases, maxReported)}%` }}
-                        ></div>
-                      </div>
-                    </td>
-
-                    {/* Solved Cases */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-gray-700 font-medium">{division.solvedCases}</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${getBarWidth(division.solvedCases, maxSolved)}%` }}
-                        ></div>
-                      </div>
-                    </td>
-
-                    {/* Active Cases */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-gray-700 font-medium">{division.activeCases}</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-orange-600 h-2 rounded-full"
-                          style={{ width: `${getBarWidth(division.activeCases, maxReported)}%` }}
-                        ></div>
-                      </div>
-                    </td>
-
-                    {/* Resolution Rate */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`font-medium ${resolutionRate >= 60 ? 'text-green-600' : resolutionRate >= 40 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {resolutionRate}%
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div
-                          className={`h-2 rounded-full ${resolutionRate >= 60 ? 'bg-green-600' : resolutionRate >= 40 ? 'bg-yellow-600' : 'bg-red-600'}`}
-                          style={{ width: `${resolutionRate}%` }}
-                        ></div>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          className={`font-medium ${
+                            resolutionRate >= 60
+                              ? "text-green-600"
+                              : resolutionRate >= 40
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {resolutionRate}%
+                        </div>
+                        {division.reportedCases > 0 && (
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div
+                              className={`h-2 rounded-full ${
+                                resolutionRate >= 60
+                                  ? "bg-green-600"
+                                  : resolutionRate >= 40
+                                  ? "bg-yellow-600"
+                                  : "bg-red-600"
+                              }`}
+                              style={{ width: `${resolutionRate}%` }}
+                            ></div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
-
-    
-
-
     </div>
   );
 }
