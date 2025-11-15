@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FiSave, FiEdit, FiTrash2, FiX } from "react-icons/fi";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_BASE, API_ENDPOINTS } from "../../config/api";
 
 const ManageGovtSpending = () => {
   const [budgetItems, setBudgetItems] = useState([]);
@@ -24,7 +23,7 @@ const ManageGovtSpending = () => {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/govt-spending`);
+      const res = await fetch(API_ENDPOINTS.GOVT_SPENDING);
       const json = await res.json();
       if (json.success) setBudgetItems(json.data);
     } catch (e) {
@@ -56,7 +55,7 @@ const ManageGovtSpending = () => {
     try {
       if (isEditing && formData._id) {
         const res = await fetch(
-          `${API_BASE}/api/govt-spending/${formData._id}`,
+          `${API_ENDPOINTS.GOVT_SPENDING}/${formData._id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -73,7 +72,7 @@ const ManageGovtSpending = () => {
         if (!res.ok) throw new Error(json.message || "Update failed");
         await fetchItems();
       } else {
-        const res = await fetch(`${API_BASE}/api/govt-spending`, {
+        const res = await fetch(API_ENDPOINTS.GOVT_SPENDING, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -111,7 +110,7 @@ const ManageGovtSpending = () => {
   const handleDelete = async (id) => {
     if (!confirm("Delete this item?")) return;
     try {
-      const res = await fetch(`${API_BASE}/api/govt-spending/${id}`, {
+      const res = await fetch(`${API_ENDPOINTS.GOVT_SPENDING}/${id}`, {
         method: "DELETE",
       });
       const json = await res.json();

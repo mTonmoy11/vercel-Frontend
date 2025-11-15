@@ -6,6 +6,7 @@ import {
   FiChevronUp,
   FiExternalLink,
 } from "react-icons/fi";
+import { API_BASE, API_ENDPOINTS } from "../../config/api";
 
 const SearchCase = () => {
   useEffect(() => {
@@ -28,7 +29,7 @@ const SearchCase = () => {
   const fetchCases = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/reports");
+      const response = await fetch(API_ENDPOINTS.REPORTS);
       const result = await response.json();
 
       if (result.success) {
@@ -63,7 +64,7 @@ const SearchCase = () => {
       }
     } catch (err) {
       console.error("Error fetching cases:", err);
-      setError("Error loading cases");
+      setError("Error loading cases. Please check your connection.");
     } finally {
       setLoading(false);
     }

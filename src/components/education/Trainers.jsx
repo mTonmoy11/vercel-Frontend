@@ -11,8 +11,7 @@ import "swiper/css/effect-coverflow";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { FiUser, FiStar } from "react-icons/fi";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_BASE, API_ENDPOINTS } from "../../config/api";
 
 const Trainers = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -39,7 +38,7 @@ const Trainers = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/trainers`);
+      const response = await fetch(API_ENDPOINTS.TRAINERS);
       const result = await response.json();
 
       if (!response.ok) {

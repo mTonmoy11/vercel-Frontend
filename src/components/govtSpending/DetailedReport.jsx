@@ -14,8 +14,7 @@ import {
 } from "recharts";
 import { Link } from "react-router-dom";
 import { FiArrowLeft, FiDownload, FiPrinter, FiSearch } from "react-icons/fi";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_BASE, API_ENDPOINTS } from "../../config/api";
 
 const DetailedReport = () => {
   // Show from top
@@ -49,7 +48,7 @@ const DetailedReport = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/api/govt-spending`);
+      const response = await fetch(API_ENDPOINTS.GOVT_SPENDING);
       const result = await response.json();
 
       if (!response.ok) {
@@ -104,7 +103,7 @@ const DetailedReport = () => {
   // Fetch yearly comparison data
   const fetchYearlyData = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/govt-spending/yearly`);
+      const response = await fetch(API_ENDPOINTS.GOVT_SPENDING_YEARLY);
       const result = await response.json();
 
       if (!response.ok) {

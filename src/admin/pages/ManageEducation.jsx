@@ -12,8 +12,7 @@ import {
   FiUsers,
   FiStar,
 } from "react-icons/fi";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_BASE, API_ENDPOINTS } from "../../config/api";
 
 function ManageEducation() {
   // Trainer states
@@ -72,17 +71,13 @@ function ManageEducation() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/trainers`);
-      const result = await response.json();
-
-      if (result.success) {
-        setTrainers(result.data);
-      } else {
-        setError("Failed to fetch trainers");
+      const response = await fetch(API_ENDPOINTS.TRAINERS);
+      const data = await response.json();
+      if (data.success) {
+        setTrainers(data.data);
       }
-    } catch (err) {
-      console.error("Error fetching trainers:", err);
-      setError("Error loading trainers");
+    } catch (error) {
+      console.error("Error fetching trainers:", error);
     } finally {
       setLoading(false);
     }
@@ -93,11 +88,10 @@ function ManageEducation() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/education-events`);
-      const result = await response.json();
-
-      if (result.success) {
-        setEvents(result.data);
+      const response = await fetch(API_ENDPOINTS.EVENTS);
+      const data = await response.json();
+      if (data.success) {
+        setEvents(data.data);
       } else {
         setError("Failed to fetch events");
       }
