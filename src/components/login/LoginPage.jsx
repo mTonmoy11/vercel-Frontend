@@ -10,7 +10,6 @@ const LoginPage = () => {
   const location = useLocation();
 
   const [showUserLogin, setShowUserLogin] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -20,7 +19,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn, user, loginAdmin } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleUserLogin = async (e) => {
@@ -106,77 +105,8 @@ const LoginPage = () => {
     }
   };
 
-  const handleAdminLogin = async (e) => {
-    e.preventDefault();
-
-    setEmailError("");
-    setPasswordError("");
-    setLoginError("");
-    setIsLoading(true);
-
-    const form = e.target;
-    const email = form.email.value;
-    const password = form.password.value;
-
-    if (!email) {
-      setEmailError("Email is required");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError("Please enter a valid email address");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!password) {
-      setPasswordError("Password is required");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch("http://localhost:5000/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Admin login failed");
-
-      if (data.success) {
-        // Persist in context (also writes localStorage)
-        loginAdmin(data.admin);
-        // Navigate after state set
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        setLoginError(data.message || "Admin login failed");
-      }
-    } catch (err) {
-      setLoginError(
-        err.message || "Invalid admin credentials. Please try again."
-      );
-      setEmail("");
-      setPassword("");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const toggleUserLogin = () => {
     setShowUserLogin(true);
-    setShowAdminLogin(false);
-    setEmailError("");
-    setPasswordError("");
-    setLoginError("");
-    setEmail("");
-    setPassword("");
-  };
-
-  const toggleAdminLogin = () => {
-    setShowAdminLogin(true);
-    setShowUserLogin(false);
     setEmailError("");
     setPasswordError("");
     setLoginError("");
@@ -186,7 +116,6 @@ const LoginPage = () => {
 
   const goBack = () => {
     setShowUserLogin(false);
-    setShowAdminLogin(false);
     setEmailError("");
     setPasswordError("");
     setLoginError("");
@@ -263,23 +192,6 @@ const LoginPage = () => {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-      />
-    </svg>
-  );
-
-  const AdminIcon = () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-5 w-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="#f6824d"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M10 7H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-4M10 7V5a2 2 0 114 0v2m-4 0h4m-8 4h.01M14 11h.01"
       />
     </svg>
   );
@@ -403,7 +315,7 @@ const LoginPage = () => {
           {/* Right Side - Login Form */}
           <div className="w-full md:w-3/5 p-8">
             {/* Initial View - Login/Signup Buttons */}
-            {!showUserLogin && !showAdminLogin ? (
+            {!showUserLogin ? (
               <div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
                   Welcome Back
@@ -434,26 +346,16 @@ const LoginPage = () => {
                       </button>
                     </Link>
                   </div>
-
-                  <div className="text-center mt-8">
-                    <button
-                      onClick={toggleAdminLogin}
-                      className="btn btn-ghost text-[#f6824d] hover:bg-[#fff5f0]"
-                    >
-                      <AdminIcon className="mr-2 inline-block" />
-                      Admin Login
-                    </button>
-                  </div>
                 </div>
               </div>
             ) : (
               /* Login Form */
               <div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                  {showUserLogin ? "User Login" : "Admin Login"}
+                  User Login
                 </h2>
                 <p className="text-gray-600 mb-8">
-                  Sign in to your {showUserLogin ? "user" : "admin"} account
+                  Sign in to your user account
                 </p>
 
                 {loginError && (
@@ -476,9 +378,7 @@ const LoginPage = () => {
                   </div>
                 )}
 
-                <form
-                  onSubmit={showUserLogin ? handleUserLogin : handleAdminLogin}
-                >
+                <form onSubmit={handleUserLogin}>
                   <div className="form-control mb-4">
                     <label className="label">
                       <span className="label-text text-lg">Email Address</span>

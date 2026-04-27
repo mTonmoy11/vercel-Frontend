@@ -21,7 +21,7 @@ const UserDashboard = () => {
   const userEmail = useMemo(
     () =>
       user?.email || user?.providerData?.[0]?.email || adminUser?.email || "",
-    [user, adminUser]
+    [user, adminUser],
   );
 
   const [profile, setProfile] = useState(null);
@@ -54,8 +54,8 @@ const UserDashboard = () => {
       try {
         const res = await fetch(
           `${API_BASE}/api/registration/by-email/${encodeURIComponent(
-            userEmail
-          )}`
+            userEmail,
+          )}`,
         );
 
         if (!res.ok) {
@@ -103,8 +103,8 @@ const UserDashboard = () => {
           regularReports = Array.isArray(reportsData?.data)
             ? reportsData.data
             : Array.isArray(reportsData)
-            ? reportsData
-            : [];
+              ? reportsData
+              : [];
         }
 
         // Fetch ACC form reports
@@ -116,22 +116,22 @@ const UserDashboard = () => {
           accFormReports = Array.isArray(accData?.data)
             ? accData.data
             : Array.isArray(accData)
-            ? accData
-            : [];
+              ? accData
+              : [];
         }
 
         // Filter reports by user email (for non-anonymous regular reports)
         const userRegularReports = regularReports.filter(
           (r) =>
             !r.isAnonymous &&
-            (r.userId === user?.uid || r.phone === profile?.phone)
+            (r.userId === user?.uid || r.phone === profile?.phone),
         );
 
         // Filter ACC reports by complainant email
         const userAccReports = accFormReports.filter(
           (r) =>
             r.complainant?.email === userEmail ||
-            r.complainant?.mobile === profile?.phone
+            r.complainant?.mobile === profile?.phone,
         );
 
         setReports(userRegularReports);
@@ -142,14 +142,14 @@ const UserDashboard = () => {
 
         const totalReports = allUserReports.length;
         const pendingReports = allUserReports.filter(
-          (r) => r.status === "pending"
+          (r) => r.status === "pending",
         ).length;
         const resolvedReports = allUserReports.filter(
-          (r) => r.status === "resolved"
+          (r) => r.status === "resolved",
         ).length;
         const underReviewReports = allUserReports.filter(
           (r) =>
-            r.status === "under-review" || r.status === "under-investigation"
+            r.status === "under-review" || r.status === "under-investigation",
         ).length;
 
         setStats({
@@ -206,13 +206,13 @@ const UserDashboard = () => {
     try {
       const res = await fetch(
         `${API_BASE}/api/registration/by-email/${encodeURIComponent(
-          profileData.email
+          profileData.email,
         )}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(profileData),
-        }
+        },
       );
 
       if (!res.ok) throw new Error("Failed to save profile");
@@ -642,7 +642,7 @@ const UserDashboard = () => {
             </div>
           </div>
 
-          {/* Right Column - Reports Table */}
+          {/* Right Column - Reports Table */}}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-4">
@@ -712,7 +712,7 @@ const UserDashboard = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span
                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                                  report.status
+                                  report.status,
                                 )}`}
                               >
                                 {report.status}

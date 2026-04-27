@@ -6,7 +6,7 @@ import {
   FiChevronUp,
   FiExternalLink,
 } from "react-icons/fi";
-import { API_BASE, API_ENDPOINTS } from "../../config/api";
+import { API_BASE } from "../../config/api";
 
 const SearchCase = () => {
   useEffect(() => {
@@ -29,37 +29,79 @@ const SearchCase = () => {
   const fetchCases = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_ENDPOINTS.REPORTS);
-      const result = await response.json();
+      const [reportsResponse, accReportsResponse] = await Promise.all([
+        fetch(`${API_BASE}/reports`),
+        fetch(`${API_BASE}/acc-form-reports`),
+      ]);
 
-      if (result.success) {
-        // Transform backend data to match case structure
-        const transformedCases = result.data.map((report) => ({
-          id: report._id,
-          caseId: `C-${new Date(report.createdAt).getFullYear()}-${report._id
-            .slice(-6)
-            .toUpperCase()}`,
-          name: report.isAnonymous
-            ? "Anonymous Report"
-            : `State vs. ${report.name || "Unknown"}`,
-          type: report.problemType,
-          status: report.status,
-          division: report.incidentDivision,
-          description: report.description,
-          address: report.incidentAddress,
-          isAnonymous: report.isAnonymous,
-          lastUpdate: new Date(report.createdAt).toLocaleDateString(),
-          submittedAt: report.submittedAt,
-          reporterInfo: report.isAnonymous
-            ? null
-            : {
-                name: report.name,
-                phone: report.phone,
-                address: report.address,
-              },
-        }));
-        setCases(transformedCases);
-      } else {
+      const [reportsResult, accReportsResult] = await Promise.all([
+        reportsResponse.json(),
+        accReportsResponse.json(),
+      ]);
+
+      const generalReports = reportsResult?.success
+        ? reportsResult.data.map((report) => ({
+            id: report._id,
+            createdAt: report.createdAt,
+            caseId:
+              report.caseId ||
+              `C-${new Date(report.createdAt).getFullYear()}-${report._id
+                .slice(-6)
+                .toUpperCase()}`,
+            name: report.isAnonymous
+              ? "Anonymous Report"
+              : `State vs. ${report.name || "Unknown"}`,
+            type: report.problemType,
+            status: report.status,
+            division: report.incidentDivision,
+            description: report.description,
+            address: report.incidentAddress,
+            isAnonymous: report.isAnonymous,
+            lastUpdate: new Date(report.createdAt).toLocaleDateString(),
+            submittedAt: report.submittedAt,
+            reporterInfo: report.isAnonymous
+              ? null
+              : {
+                  name: report.name,
+                  phone: report.phone,
+                  address: report.address,
+                },
+          }))
+        : [];
+
+      const accReports = accReportsResult?.success
+        ? accReportsResult.data.map((report) => ({
+            id: report._id,
+            createdAt: report.createdAt,
+            caseId:
+              report.referenceNumber ||
+              `ACC-${new Date(report.createdAt).toISOString().slice(0, 10).replace(/-/g, "")}`,
+            name: `State vs. ${report?.accused?.name || "Unknown"}`,
+            type: report?.incident?.corruptionType || "Other",
+            status: report.status,
+            division: report?.incident?.division || "Unknown",
+            description: report?.incident?.description || "",
+            address: report?.incident?.location || "",
+            isAnonymous: false,
+            lastUpdate: new Date(report.createdAt).toLocaleDateString(),
+            submittedAt: report.submittedAt,
+            reporterInfo: report?.complainant
+              ? {
+                  name: report.complainant.fullName,
+                  phone: report.complainant.mobile,
+                  address: report.complainant.address,
+                }
+              : null,
+          }))
+        : [];
+
+      const transformedCases = [...generalReports, ...accReports].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+      );
+
+      setCases(transformedCases);
+
+      if (!reportsResult?.success && !accReportsResult?.success) {
         setError("Failed to fetch cases");
       }
     } catch (err) {
@@ -231,8 +273,8 @@ const SearchCase = () => {
                     searchType === "caseId"
                       ? "Enter case ID (e.g. C-2023-ABC123)"
                       : searchType === "name"
-                      ? "Enter case name"
-                      : "Enter case type"
+                        ? "Enter case name"
+                        : "Enter case type"
                   }
                   className="flex-1 p-4 focus:outline-none"
                   value={searchTerm}
@@ -382,7 +424,7 @@ const SearchCase = () => {
                     </td>
                     <td
                       className={`py-4 px-6 font-medium ${getTypeColor(
-                        caseItem.type
+                        caseItem.type,
                       )}`}
                     >
                       {caseItem.type}
@@ -393,7 +435,7 @@ const SearchCase = () => {
                     <td className="py-4 px-6">
                       <span
                         className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                          caseItem.status
+                          caseItem.status,
                         )}`}
                       >
                         {getStatusText(caseItem.status)}
@@ -408,7 +450,7 @@ const SearchCase = () => {
                         onClick={() => {
                           // You can implement a modal or navigate to details page
                           alert(
-                            `Case Details:\n\nID: ${caseItem.caseId}\nType: ${caseItem.type}\nDivision: ${caseItem.division}\nStatus: ${caseItem.status}\n\nDescription: ${caseItem.description}`
+                            `Case Details:\n\nID: ${caseItem.caseId}\nType: ${caseItem.type}\nDivision: ${caseItem.division}\nStatus: ${caseItem.status}\n\nDescription: ${caseItem.description}`,
                           );
                         }}
                       >

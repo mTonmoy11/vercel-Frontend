@@ -101,8 +101,8 @@ const Navbar = () => {
                     isActive
                       ? "text-[#33a954] font-bold"
                       : scrolled
-                      ? "text-gray-700 hover:text-[#f6824d]"
-                      : "text-white hover:text-[#33a954]"
+                        ? "text-gray-700 hover:text-[#f6824d]"
+                        : "text-white hover:text-[#33a954]"
                   }`
                 }
               >
@@ -129,8 +129,8 @@ const Navbar = () => {
                     isActive
                       ? "text-[#33a954] font-bold"
                       : scrolled
-                      ? "text-gray-700 hover:text-[#f6824d]"
-                      : "text-white hover:text-[#33a954]"
+                        ? "text-gray-700 hover:text-[#f6824d]"
+                        : "text-white hover:text-[#33a954]"
                   }`
                 }
               >
@@ -146,8 +146,8 @@ const Navbar = () => {
                       isActive
                         ? "text-[#33a954] font-bold"
                         : scrolled
-                        ? "text-gray-700 hover:text-[#f6824d]"
-                        : "text-white hover:text-[#33a954]"
+                          ? "text-gray-700 hover:text-[#f6824d]"
+                          : "text-white hover:text-[#33a954]"
                     }`
                   }
                 >
